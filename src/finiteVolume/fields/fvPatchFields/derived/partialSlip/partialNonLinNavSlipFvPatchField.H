@@ -22,7 +22,7 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::partialSlipFvPatchField
+    Foam::partialNonLinNavSlipFvPatchField
 
 Group
     grpWallBoundaryConditions grpGenericBoundaryConditions
@@ -31,32 +31,16 @@ Description
     This boundary condition provides a partial slip condition.  The amount of
     slip is controlled by a user-supplied field.
 
-Usage
-    \table
-        Property      | Description             | Required    | Default value
-        valueFraction | fraction od value used for boundary [0-1] | yes |
-    \endtable
-
-    Example of the boundary condition specification:
-    \verbatim
-    <patchName>
-    {
-        type            partialSlip;
-        valueFraction   uniform 0.1;
-        value           uniform 0;
-    }
-    \endverbatim
-
 See also
     Foam::transformFvPatchField
 
 SourceFiles
-    partialSlipFvPatchField.C
+    partial NonLinNavSlipFvPatchField.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef partialSlipFvPatchField_H
-#define partialSlipFvPatchField_H
+#ifndef partialNonLinNavSlipFvPatchField_H
+#define partialNonLinNavSlipFvPatchField_H
 
 #include "transformFvPatchField.H"
 
@@ -70,79 +54,82 @@ namespace Foam
 \*---------------------------------------------------------------------------*/
 
 template<class Type>
-class partialSlipFvPatchField
+class partialNonLinNavSlipFvPatchField
 :
-    public transformFvPatchField<Type>
+    public transformFvPatchVectorField
 {
     // Private data
 
-        //- Fraction (0-1) of value used for boundary condition
-        scalarField valueFraction_;
+        //-  value used for boundary condition
+        scalarField rho_;
+        scalarField n_;
+        scalarField relaxationFactor_;
+        scalarField slipFactor_;
 
 
 public:
 
     //- Runtime type information
-    TypeName("partialSlip");
+    TypeName("partialNonLinNavSlip");
 
 
     // Constructors
 
         //- Construct from patch and internal field
-        partialSlipFvPatchField
+        partialNonLinNavSlipFvPatchField
         (
             const fvPatch&,
-            const DimensionedField<Type, volMesh>&
+            const DimensionedField<vector, volMesh>&
         );
 
         //- Construct from patch, internal field and dictionary
-        partialSlipFvPatchField
+        partialNonLinNavSlipFvPatchField
         (
             const fvPatch&,
-            const DimensionedField<Type, volMesh>&,
+            const DimensionedField<vector, volMesh>&,
             const dictionary&
         );
 
         //- Construct by mapping given partialSlipFvPatchField onto a new patch
-        partialSlipFvPatchField
+        partialNonLinNavSlipFvPatchField
         (
-            const partialSlipFvPatchField<Type>&,
+            const partialSlipFvPatchVectorField&,
             const fvPatch&,
-            const DimensionedField<Type, volMesh>&,
+            const DimensionedField<vector, volMesh>&,
             const fvPatchFieldMapper&
         );
 
         //- Construct as copy
-        partialSlipFvPatchField
+        partialNonLinNavSlipFvPatchField
         (
-            const partialSlipFvPatchField<Type>&
+            const partialNonLinNavSlipFvPatchVectorField&
         );
 
         //- Construct and return a clone
-        virtual tmp<fvPatchField<Type>> clone() const
+        virtual tmp<fvPatchVectorField> clone() const
         {
-            return tmp<fvPatchField<Type>>
+            return tmp<fvPatchVectorField>
             (
-                new partialSlipFvPatchField<Type>(*this)
+                new partialNonLinNavSlipFvPatchVectorField(*this)
             );
         }
 
         //- Construct as copy setting internal field reference
-        partialSlipFvPatchField
+        partialNonLinNavSlipFvPatchField
         (
-            const partialSlipFvPatchField<Type>&,
-            const DimensionedField<Type, volMesh>&
+            const partialSlipFvPatchVectorField&,
+            const DimensionedField<vector, volMesh>&
         );
 
         //- Construct and return a clone setting internal field reference
-        virtual tmp<fvPatchField<Type>> clone
+        virtual tmp<fvPatchVectorField> clone
         (
-            const DimensionedField<Type, volMesh>& iF
+            const DimensionedField<vector, volMesh>& iF
         ) const
         {
-            return tmp<fvPatchField<Type>>
+            return tmp<fvPatchVectorField>
             (
-                new partialSlipFvPatchField<Type>(*this, iF)
+                new partialSlipFvPatchVectorField(*this, iF)
             );
         }
 
@@ -169,28 +156,52 @@ public:
             //- Reverse map the given fvPatchField onto this fvPatchField
             virtual void rmap
             (
-                const fvPatchField<Type>&,
+                const fvPatchVectorField&,
                 const labelList&
             );
 
 
         // Return defining fields
 
-            virtual scalarField& valueFraction()
+            virtual scalarField& rho()
             {
-                return valueFraction_;
+                return rho_;
+            }
+            virtual scalarField& n()
+            {
+                return n_;
+            }
+            virtual scalarField& relaxationFactor()
+            {
+                return relaxationFactor_;
+            }
+            virtual scalarField& slipFactor()
+            {
+                return slipFactor_;
             }
 
-            virtual const scalarField& valueFraction() const
+            virtual const scalarField& rho() const
             {
-                return valueFraction_;
+                return rho_;
+            }
+            virtual const scalarField& n() const
+            {
+                return n_;
+            }
+            virtual const scalarField& relaxationFactor() const
+            {
+                return relaxationFactor_;
+            }
+            virtual const scalarField& slipFactor() const
+            {
+                return slipFactor_;
             }
 
 
         // Evaluation functions
 
             //- Return gradient at boundary
-            virtual tmp<Field<Type>> snGrad() const;
+            virtual tmp<vectorField> snGrad() const;
 
             //- Evaluate the patch field
             virtual void evaluate
@@ -199,7 +210,7 @@ public:
             );
 
             //- Return face-gradient transform diagonal
-            virtual tmp<Field<Type>> snGradTransformDiag() const;
+            virtual tmp<vectorField> snGradTransformDiag() const;
 
 
         //- Write
@@ -208,23 +219,23 @@ public:
 
     // Member operators
 
-        virtual void operator=(const UList<Type>&) {}
+        virtual void operator=(const UList<T>&) {}
 
-        virtual void operator=(const fvPatchField<Type>&) {}
-        virtual void operator+=(const fvPatchField<Type>&) {}
-        virtual void operator-=(const fvPatchField<Type>&) {}
+        virtual void operator=(const fvPatchField<vector>&) {}
+        virtual void operator+=(const fvPatchField<vector>&) {}
+        virtual void operator-=(const fvPatchField<vector>&) {}
         virtual void operator*=(const fvPatchField<scalar>&) {}
         virtual void operator/=(const fvPatchField<scalar>&) {}
 
-        virtual void operator+=(const Field<Type>&) {}
-        virtual void operator-=(const Field<Type>&) {}
+        virtual void operator+=(const Field<vector>&) {}
+        virtual void operator-=(const Field<vector>&) {}
 
         virtual void operator*=(const Field<scalar>&) {}
         virtual void operator/=(const Field<scalar>&) {}
 
-        virtual void operator=(const Type&) {}
-        virtual void operator+=(const Type&) {}
-        virtual void operator-=(const Type&) {}
+        virtual void operator=(const vector&) {}
+        virtual void operator+=(const vector&) {}
+        virtual void operator-=(const vector&) {}
         virtual void operator*=(const scalar) {}
         virtual void operator/=(const scalar) {}
 };
@@ -237,7 +248,7 @@ public:
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #ifdef NoRepository
-    #include "partialSlipFvPatchField.C"
+    #include "partialNonLinNavSlipFvPatchField.C"
 #endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
